@@ -11,16 +11,26 @@ import torch
 import time
 
 # =========================================
+# STARTUP LOGS
+# =========================================
+
+print("STARTING FASTAPI APP")
+
+# =========================================
 # FASTAPI APP
 # =========================================
 
 app = FastAPI()
 
 # =========================================
-# LOAD MODEL ONLY ONCE
+# MODEL PATH
 # =========================================
 
 MODEL_PATH = "./saved_model"
+
+# =========================================
+# LOAD TOKENIZER
+# =========================================
 
 print("Loading tokenizer...")
 
@@ -28,19 +38,28 @@ tokenizer = AutoTokenizer.from_pretrained(
     MODEL_PATH
 )
 
+print("Tokenizer loaded!")
+
+# =========================================
+# LOAD MODEL
+# =========================================
+
 print("Loading model...")
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    MODEL_PATH
+    MODEL_PATH,
+    torch_dtype=torch.float32
 )
 
+print("Model loaded successfully!")
+
 # =========================================
-# DEVICE CONFIG
+# FORCE CPU
 # =========================================
 
-device = 0 if torch.cuda.is_available() else -1
+device = -1
 
-print("Using device:", device)
+print("Using CPU device")
 
 # =========================================
 # CREATE PIPELINE
@@ -55,7 +74,7 @@ classifier = pipeline(
     max_length=64
 )
 
-print("Model loaded successfully!")
+print("Pipeline created successfully!")
 
 # =========================================
 # REQUEST MODELS
@@ -74,8 +93,20 @@ class PredictionRequest(BaseModel):
 
 @app.get("/")
 def home():
+
     return {
         "status": "AI service running"
+    }
+
+# =========================================
+# EXTRA HEALTH ROUTE
+# =========================================
+
+@app.get("/health")
+def health():
+
+    return {
+        "status": "healthy"
     }
 
 # =========================================
@@ -86,6 +117,10 @@ def home():
 def predict(request: PredictionRequest):
 
     start_time = time.time()
+
+    print(
+        f"Received {len(request.transactions)} transactions"
+    )
 
     # =====================================
     # EXTRACT NARRATIONS
@@ -133,10 +168,17 @@ def predict(request: PredictionRequest):
     )
 
     print(
-        f"Processed {len(request.transactions)} "
+        f"Processed {len(response)} "
         f"transactions in {total_time} sec"
     )
 
     return {
-        "predictions": response
+        "predictions": response,
+        "processing_time_seconds": total_time
     }
+
+# =========================================
+# STARTUP COMPLETE
+# =========================================
+
+print("FASTAPI APP STARTUP COMPLETE")
