@@ -26,7 +26,7 @@ app = FastAPI()
 # MODEL PATH
 # =========================================
 
-MODEL_PATH = "./saved_model"
+MODEL_PATH = "RAJASHREE28032005/transaction-category-model"
 
 # =========================================
 # LOAD TOKENIZER
@@ -48,7 +48,7 @@ print("Loading model...")
 
 model = AutoModelForSequenceClassification.from_pretrained(
     MODEL_PATH,
-    torch_dtype=torch.float32
+    dtype=torch.float32
 )
 
 print("Model loaded successfully!")
