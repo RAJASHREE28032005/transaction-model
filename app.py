@@ -10,27 +10,11 @@ from transformers import (
 import torch
 import time
 
-# =========================================
-# STARTUP LOGS
-# =========================================
-
 print("STARTING FASTAPI APP")
-
-# =========================================
-# FASTAPI APP
-# =========================================
 
 app = FastAPI()
 
-# =========================================
-# MODEL PATH
-# =========================================
-
 MODEL_PATH = "RAJASHREE28032005/transaction-category-model"
-
-# =========================================
-# LOAD TOKENIZER
-# =========================================
 
 print("Loading tokenizer...")
 
@@ -39,10 +23,6 @@ tokenizer = AutoTokenizer.from_pretrained(
 )
 
 print("Tokenizer loaded!")
-
-# =========================================
-# LOAD MODEL
-# =========================================
 
 print("Loading model...")
 
@@ -53,32 +33,14 @@ model = AutoModelForSequenceClassification.from_pretrained(
 
 print("Model loaded successfully!")
 
-# =========================================
-# FORCE CPU
-# =========================================
-
-device = -1
-
-print("Using CPU device")
-
-# =========================================
-# CREATE PIPELINE
-# =========================================
-
 classifier = pipeline(
-    task="text-classification",
+    "text-classification",
     model=model,
     tokenizer=tokenizer,
-    device=device,
-    truncation=True,
-    max_length=64
+    device=-1
 )
 
 print("Pipeline created successfully!")
-
-# =========================================
-# REQUEST MODELS
-# =========================================
 
 class Transaction(BaseModel):
     transactionId: int
@@ -87,62 +49,27 @@ class Transaction(BaseModel):
 class PredictionRequest(BaseModel):
     transactions: list[Transaction]
 
-# =========================================
-# HEALTH CHECK
-# =========================================
-
 @app.get("/")
 def home():
 
     return {
-        "status": "AI service running"
+        "status": "running"
     }
-
-# =========================================
-# EXTRA HEALTH ROUTE
-# =========================================
-
-@app.get("/health")
-def health():
-
-    return {
-        "status": "healthy"
-    }
-
-# =========================================
-# PREDICT CATEGORY
-# =========================================
 
 @app.post("/predict-category")
 def predict(request: PredictionRequest):
 
     start_time = time.time()
 
-    print(
-        f"Received {len(request.transactions)} transactions"
-    )
-
-    # =====================================
-    # EXTRACT NARRATIONS
-    # =====================================
-
     narrations = [
         txn.narration
         for txn in request.transactions
     ]
 
-    # =====================================
-    # BATCH INFERENCE
-    # =====================================
-
     predictions = classifier(
         narrations,
         batch_size=32
     )
-
-    # =====================================
-    # BUILD RESPONSE
-    # =====================================
 
     response = []
 
@@ -162,23 +89,8 @@ def predict(request: PredictionRequest):
 
     end_time = time.time()
 
-    total_time = round(
-        end_time - start_time,
-        2
-    )
-
-    print(
-        f"Processed {len(response)} "
-        f"transactions in {total_time} sec"
-    )
-
     return {
         "predictions": response,
-        "processing_time_seconds": total_time
+        "processing_time_seconds":
+            round(end_time - start_time, 2)
     }
-
-# =========================================
-# STARTUP COMPLETE
-# =========================================
-
-print("FASTAPI APP STARTUP COMPLETE")
